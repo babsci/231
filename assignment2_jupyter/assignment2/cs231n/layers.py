@@ -425,8 +425,17 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    
+    #pass
+    x_t = x.T
+    sample_mean = np.mean(x_t,axis=0)
+    sample_var = np.var(x_t,axis=0)
+    x_pi = (x_t-sample_mean)/np.sqrt(sample_var+eps)
+    
+    out = gamma*(x_pi.T)+beta
+    #out = out.T
+    
+    cache = x,gamma,np.sqrt(sample_var+eps),sample_mean
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -460,8 +469,36 @@ def layernorm_backward(dout, cache):
     # still apply!                                                            #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    x, gamma, std , mean = cache
+    x_t = x.T
+    x_pi = (x_t-mean)/std
+    N = x_t.shape[0]
+    d_xpi = dout*gamma
+    dvar = np.sum(d_xpi.T*(x_t-mean)*(-1/2)*std**(-3),axis=0)
+    dmean = np.sum(d_xpi.T*(-1)/std,axis=0) + dvar*np.sum(-2*(x_t-mean)/N,axis=0)
+    dx = d_xpi.T/std + dvar*2*(x_t-mean)/N + dmean/N
+    dx = dx.T
+    #dx = dout * gamma / np.sqrt(var+eps)
+    dgamma = np.sum(dout*x_pi.T,axis=0)
+    dbeta = np.sum(dout,axis=0)
+    """
+    #pass
+    N,D = x.shape
 
-    pass
+    x_pi = ((x.T-mean)/std).T
+
+    dgamma = np.sum(dout*x_pi,axis=0)
+    dbeta = np.sum(dout,axis=0)
+    
+    dx_pi = dout*gamma
+    dvar = np.sum(dx_pi*(x.T-mean)*(-1/2)*std**(-3),axis=0)
+    dmean = np.sum(dx_pi*(-1)/std,axis=0) + dvar*np.sum(-2*(x.T-mean),axis=0)
+    dx = dx_pi * dxpi_x
+    #dmean = np.ones_like(mean)/D
+    """
+    #dvar = np.sum(2*(x.T-mean),axis=0)*(np.ones_like(dmean)-dmean)
+    
+    #dx = dout*((np.ones_like(dmean)-dmean)*std - (x.T-mean)*(-0.5)*(std**3)*dvar)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -509,8 +546,9 @@ def dropout_forward(x, dropout_param):
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        mask = (np.random.rand(*x.shape) < p)/p
+        out = x*mask
+        #pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -522,7 +560,8 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #pass
+        out = x
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -553,7 +592,8 @@ def dropout_backward(dout, cache):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        #pass
+        dx = dout*mask
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################

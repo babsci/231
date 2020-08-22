@@ -292,12 +292,17 @@ class FullyConnectedNet(object):
         #pass
         cache = {}
         hidden_x = X
+        dropout_cache = {}
         if(self.normalization == 'batchnorm'):
           for i in range(1,self.num_layers):
             hidden_x, cache[str(i)] = affine_batchnorm_relu_forward(hidden_x, self.params['W'+str(i)], self.params['b'+str(i)],self.params['gamma'+str(i)],self.params['beta'+str(i)],self.bn_params[i-1])
+            if(self.use_dropout):
+              hidden_x,dropout_cache[str(i)] = dropout_forward(hidden_x,self.dropout_param)
         else:
           for i in range(1,self.num_layers):
             hidden_x, cache[str(i)] = affine_relu_forward(hidden_x, self.params['W'+str(i)], self.params['b'+str(i)])
+            if(self.use_dropout):
+              hidden_x,dropout_cache[str(i)] = dropout_forward(hidden_x,self.dropout_param)
         scores, fc_cache = affine_forward(hidden_x, self.params['W'+str(self.num_layers)], self.params['b'+str(self.num_layers)])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -330,9 +335,13 @@ class FullyConnectedNet(object):
         d_hid, grads['W'+str(str(self.num_layers))], grads['b'+str(self.num_layers)] = affine_backward(dout, fc_cache)
         if(self.normalization == 'batchnorm'):
           for i in range(self.num_layers-1,0,-1):
+            if(self.use_dropout):
+              d_hid = dropout_backward(d_hid,dropout_cache[str(i)])
             d_hid, grads['W'+str(i)], grads['b'+str(i)],grads['gamma'+str(i)],grads['beta'+str(i)] = affine_batchnorm_relu_backward(d_hid, cache[str(i)])
         else:
           for i in range(self.num_layers-1,0,-1):
+            if(self.use_dropout):
+              d_hid = dropout_backward(d_hid,dropout_cache[str(i)])
             d_hid, grads['W'+str(i)], grads['b'+str(i)] = affine_relu_backward(d_hid, cache[str(i)])
         
         for i in range(1,self.num_layers):
